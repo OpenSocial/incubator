@@ -14,4 +14,4 @@ or you can alternatively run
 
     $ jsdoc -c jsdoc.conf
 
-Visit https://github.com/jsdoc3/jsdoc for more information about using JSdoc 3.
+Visit https://github.com/jsdoc3/jsdoc for more information about using JSDoc 3.
