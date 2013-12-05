@@ -24,6 +24,7 @@ if (!window.ActivityStreams) {
 }
 (function(){
     var _ = this._ || window._;
+
     /**
      * Class for handling Activity Stream Action processing
      * @class Actions
@@ -59,17 +60,15 @@ if (!window.ActivityStreams) {
      * Get list of Actions that can be handled for this ActivityObject
      * @method getActionsWithHandlers
      * @memberOf ActivityStreams.Actions
-     * @param {ActivityObject} activity Activity to fetch activities from
+     * @param {ActivityObject} aObject ActivityObject to fetch actions from
      * @returns {Array} List of Action names
      */
-    Actions.prototype.getActionsWithHandlers = function(activity) {
+    Actions.prototype.getActionsWithHandlers = function(aObject) {
         var actions = [];
-        if (activity && activity.actions) {
-            _.each(activity.actions, function(actionDef, actionName){
-                if(_.isObject(actionDef)){
-                    if (_.find(actionDef.handler, function(handler){
-                        return this._actionHandlers[handler];
-                    }, this)) {
+        if (aObject && aObject.actions) {
+            _.each(aObject.actions, function(actionDef, actionName){
+                if(_.isObject(actionDef) && actionDef.handler){
+                    if(this._actionHandlers[actionDef.handler]){
                         actions.push(actionName);
                     }
                 }
@@ -82,28 +81,27 @@ if (!window.ActivityStreams) {
      * @method triggerAction
      * @memberOf ActivityStreams.Actions
      * @param {String} action Name of action being triggered
-     * @param {ActivityObject} activity ActivityStreams object being used
+     * @param {ActivityObject} aObject ActivityStreams object being used
      * @returns {ActionResult | undefined} An ActionResult or undefined if no appropriate action handler was found
      */
-    Actions.prototype.triggerAction = function(action, activity) {
-        if (_.isString(action) && activity && activity.actions) {
-            var actionDef = activity.actions[action];
-            if (_.isObject(actionDef)) {
-                 return _.find(actionDef.handler, function(handler) {
-                    if (_.isFunction(this._actionHandlers[handler])) {
-                        /**
-                         * @memberOf ActivityStreams.Actions
-                         * @typedef ActionResult
-                         * @type {Object}
-                         * @property handler ID for action handler that was called
-                         * @property result Return value for handler callback
-                         */
-                        return {
-                            handler: handler,
-                            result: this._actionHandlers[handler].call(this, action, activity)
-                        };
-                    }
-                }, this);
+    Actions.prototype.triggerAction = function(action, aObject) {
+        if (_.isString(action) && aObject && aObject.actions) {
+            var actionDef = aObject.actions[action];
+            if (_.isObject(actionDef) && actionDef.handler) {
+                var handler = actionDef.handler;
+                if (_.isFunction(this._actionHandlers[handler])) {
+                    /**
+                     * @memberOf ActivityStreams.Actions
+                     * @typedef ActionResult
+                     * @type {Object}
+                     * @property handler ID for action handler that was called
+                     * @property result Return value for handler callback
+                     */
+                    return {
+                        handler: handler,
+                        result: this._actionHandlers[handler].call(this, action, aObject)
+                    };
+                }
             }
         }
     };
