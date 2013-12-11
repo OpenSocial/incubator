@@ -20,20 +20,32 @@ describe('activitystreams actions', function(){
     });
     describe('registerActionHandler', function(){
         it('registers action handlers', function(){
-            expect(Actions.registerActionHandler).toBeTruthy();
-            expect(Actions.registerActionHandler('HttpRequestHandler', function(){return true})).toBeTruthy();
+            expect(_.isFunction(Actions.registerActionHandler)).toBeTruthy();
+            var handler = new ActivityStreams.ActionHandler('test');
+            expect(Actions.registerActionHandler(handler)).toBeUndefined();
+            expect(Actions.registerActionHandler(new ActivityStreams.HttpActionHandler())).toBeUndefined();
+            expect(Actions.registerActionHandler(new ActivityStreams.IntentActionHandler())).toBeUndefined();
+            expect(Actions.registerActionHandler(new ActivityStreams.EmbedActionHandler())).toBeUndefined();
         });
-        it('requires a handler ID and a callback function', function(){
-            expect(Actions.registerActionHandler(
-                {},
-                function(){return true}
-            )).toBe(false, 'handler id must be string');
-            expect(Actions.registerActionHandler(
-                'id',
-                1
-            )).toBe(false, 'callback must be function');
-            expect(Actions.registerActionHandler()).toBe(false);
-            expect(Actions.registerActionHandler('HttpRequestHandler', function(){return true})).toBe(true);
+        it('requires an ActionHandler object', function(){
+            try {
+                Actions.registerActionHandler();
+                fail("Should have thrown ActionsException");
+            } catch(e) {
+                expect(e.name).toBe("ActionsException");
+            }
+            try {
+                Actions.registerActionHandler('id', 1);
+                fail("Should have thrown ActionsException");
+            } catch(e) {
+                expect(e.name).toBe("ActionsException");
+            }
+            try {
+                Actions.registerActionHandler({});
+                fail("Should have thrown ActionsException");
+            } catch(e) {
+                expect(e.name).toBe("ActionsException");
+            }
         });
     });
 });
