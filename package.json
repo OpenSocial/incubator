@@ -1,5 +1,5 @@
 {
-    "name": "incubator",
+    "name": "opensocial-incubator",
     "description": "OpenSocial Incubator",
     "version": "0.1.0",
     "author": {
@@ -10,7 +10,8 @@
     "main": "./node/incubator.js",
     "keywords": [
         "opensocial",
-        "activitystreams"
+        "activitystreams",
+        "social"
     ],
     "repository": {
         "type": "git",
@@ -19,7 +20,12 @@
     "dependencies": {
         "underscore": "1.4.x"
     },
-    "license": "Apache2",
+    "licenses":[
+        {
+            "type": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        }
+    ],
     "bugs": {
         "url": "http://github.com/OpenSocial/incubator/issues"
     }
