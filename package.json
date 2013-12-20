@@ -1,0 +1,26 @@
+{
+    "name": "incubator",
+    "description": "OpenSocial Incubator",
+    "version": "0.1.0",
+    "author": {
+        "name": "Matt Marum",
+        "email": "vp-projects@opensocial.org",
+        "url": "opensocial.org"
+    },
+    "main": "./node/incubator.js",
+    "keywords": [
+        "opensocial",
+        "activitystreams"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "http://github.com/OpenSocial/incubator.git"
+    },
+    "dependencies": {
+        "underscore": "1.4.x"
+    },
+    "license": "Apache2",
+    "bugs": {
+        "url": "http://github.com/OpenSocial/incubator/issues"
+    }
+}

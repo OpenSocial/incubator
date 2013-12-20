@@ -19,8 +19,13 @@
  * @author Matt Marum
  * @namespace ActivityStreams
  */
-if (!window.ActivityStreams) {
+
+if (typeof window !== 'undefined' && !window.ActivityStreams) {
     window.ActivityStreams = {};
+}
+if(typeof exports !== 'undefined'){
+    this._ = require('underscore');
+    var ActivityStreams = exports;
 }
 (function(){
     var _ = this._ || window._;

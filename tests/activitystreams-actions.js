@@ -13,39 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-describe('activitystreams actions', function(){
-    var Actions;
-    beforeEach(function(){
-        Actions = new ActivityStreams.Actions();
-    });
-    describe('registerActionHandler', function(){
-        it('registers action handlers', function(){
-            expect(_.isFunction(Actions.registerActionHandler)).toBeTruthy();
-            var handler = new ActivityStreams.ActionHandler('test');
-            expect(Actions.registerActionHandler(handler)).toBeUndefined();
-            expect(Actions.registerActionHandler(new ActivityStreams.HttpActionHandler())).toBeUndefined();
-            expect(Actions.registerActionHandler(new ActivityStreams.IntentActionHandler())).toBeUndefined();
-            expect(Actions.registerActionHandler(new ActivityStreams.EmbedActionHandler())).toBeUndefined();
+describe('Activity Streams Actions', function(){
+
+    describe("Actions class", function(){
+        var Actions;
+        beforeEach(function(){
+            Actions = new ActivityStreams.Actions();
         });
-        it('requires an ActionHandler object', function(){
-            try {
-                Actions.registerActionHandler();
-                fail("Should have thrown ActionsException");
-            } catch(e) {
-                expect(e.name).toBe("ActionsException");
-            }
-            try {
-                Actions.registerActionHandler('id', 1);
-                fail("Should have thrown ActionsException");
-            } catch(e) {
-                expect(e.name).toBe("ActionsException");
-            }
-            try {
-                Actions.registerActionHandler({});
-                fail("Should have thrown ActionsException");
-            } catch(e) {
-                expect(e.name).toBe("ActionsException");
-            }
+        describe('registerActionHandler', function(){
+            it('registers action handlers', function(){
+                expect(_.isFunction(Actions.registerActionHandler)).toBeTruthy();
+                var handler = new ActivityStreams.ActionHandler('test');
+                expect(Actions.registerActionHandler(handler)).toBeUndefined();
+                expect(Actions.registerActionHandler(new ActivityStreams.HttpActionHandler())).toBeUndefined();
+                expect(Actions.registerActionHandler(new ActivityStreams.IntentActionHandler())).toBeUndefined();
+                expect(Actions.registerActionHandler(new ActivityStreams.EmbedActionHandler())).toBeUndefined();
+            });
+            it('requires an ActionHandler object', function(){
+                try {
+                    Actions.registerActionHandler();
+                    fail("Should have thrown ActionsException");
+                } catch(e) {
+                    expect(e.name).toBe("ActionsException");
+                }
+                try {
+                    Actions.registerActionHandler('id', 1);
+                    fail("Should have thrown ActionsException");
+                } catch(e) {
+                    expect(e.name).toBe("ActionsException");
+                }
+                try {
+                    Actions.registerActionHandler({});
+                    fail("Should have thrown ActionsException");
+                } catch(e) {
+                    expect(e.name).toBe("ActionsException");
+                }
+            });
         });
     });
+
 });
