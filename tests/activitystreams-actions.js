@@ -50,6 +50,98 @@ describe('Activity Streams Actions', function(){
                 }
             });
         });
+        describe('getActionsWithHandlers', function(){
+            var actionObj;
+            beforeEach(function(){
+                actionObj = {
+                    actions: {
+                        shortHttpAction: "http://fakeurl.com",
+                        fullHttpAction: {
+                            objectType: 'HttpActionHandler'
+                        },
+                        embedAction: {
+                            objectType: 'EmbedActionHandler'
+                        },
+                        multiHandlerAction: [
+                            {
+                                objectType: 'HttpActionHandler'
+                            },
+                            {
+                                objectType: 'EmbedActionHandler'
+                            }
+                        ],
+                        neverAction: null
+                    }
+                };
+            });
+            it('should return empty array if no handlers are registered', function(){
+                expect(Actions.getActionsWithHandlers(actionObj)).toEqual([]);
+            });
+            it('should return actions for all registered handlers', function(){
+                Actions.registerActionHandler(new ActivityStreams.HttpActionHandler());
+                expect(Actions.getActionsWithHandlers(actionObj)).toEqual(['shortHttpAction', 'fullHttpAction', 'multiHandlerAction']);
+                Actions.registerActionHandler(new ActivityStreams.EmbedActionHandler());
+                expect(Actions.getActionsWithHandlers(actionObj)).toEqual(['shortHttpAction', 'fullHttpAction', 'embedAction', 'multiHandlerAction',])
+            });
+        });
+        describe('triggerAction', function(){
+            var actionObj, httpHandler, embedHandler;
+            beforeEach(function(){
+                actionObj = {
+                    actions: {
+                        httpAction: "http://fakeurl.com",
+                        multiHandlerAction: [
+                            {
+                                objectType: 'HttpActionHandler'
+                            },
+                            {
+                                objectType: 'EmbedActionHandler'
+                            }
+                        ],
+                        neverAction: null
+                    }
+                };
+                httpHandler = new ActivityStreams.HttpActionHandler();
+                httpHandler.run = function(action, aObject){
+                    expect(action).toEqual('httpAction');
+                    expect(aObject).toEqual(actionObj);
+                };
+                spyOn(httpHandler, "run").andCallThrough();
+                embedHandler = new ActivityStreams.EmbedActionHandler();
+                embedHandler.run = function(action, aObject){
+                    expect(action).toEqual('multiHandlerAction');
+                    expect(aObject).toEqual(actionObj);
+                };
+                spyOn(embedHandler, "run").andCallThrough();
+            });
+            it('should return undefined if no handler registered for this action', function(){
+                expect(Actions.triggerAction('httpAction', actionObj)).toBeUndefined();
+                expect(Actions.triggerAction('neverAction', actionObj)).toBeUndefined();
+            });
+            it('should trigger the Action Handler registered for this action', function(){
+                Actions.registerActionHandler(httpHandler);
+                var result = Actions.triggerAction('httpAction', actionObj);
+                expect(result).toEqual({
+                    type: 'HttpActionHandler',
+                    result: undefined
+                });
+                expect(httpHandler.run).toHaveBeenCalled();
+            });
+            it('should trigger the first registered Action Handler for this action', function(){
+                Actions.registerActionHandler(embedHandler);
+                var result = Actions.triggerAction('multiHandlerAction', actionObj);
+                expect(result).toEqual({
+                    type: 'EmbedActionHandler',
+                    result: undefined
+                });
+                expect(embedHandler.run).toHaveBeenCalled();
+                httpHandler = new ActivityStreams.HttpActionHandler();
+                spyOn(httpHandler, "run");
+                Actions.registerActionHandler(httpHandler);
+                Actions.triggerAction('multiHandlerAction', actionObj);
+                expect(httpHandler.run).toHaveBeenCalled();
+            });
+        });
     });
 
 });

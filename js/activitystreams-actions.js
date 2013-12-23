@@ -82,10 +82,22 @@ if(typeof exports !== 'undefined'){
             var actions = [];
             if (aObject && aObject.actions) {
                 _.each(aObject.actions, function(handlerDef, actionName){
-                    if(_.isObject(handlerDef) && handlerDef.objectType){
-                        if(this._actionHandlers[handlerDef.objectType]){
+                    if (_.isString(handlerDef)) {
+                         // A string is assumed to be a URL, which means an HttpActionHandler will be used
+                        if (this._actionHandlers['HttpActionHandler']) {
                             actions.push(actionName);
+                            return;
                         }
+                    } else if (_.isObject(handlerDef) && !_.isArray(handlerDef)) {
+                        handlerDef = [handlerDef];
+                    }
+                    if(_.isArray(handlerDef)) {
+                        var add = _.any(handlerDef, function(def){
+                            if (_.isObject(def) && def.objectType) {
+                                return this._actionHandlers[def.objectType];
+                            }
+                        }, this);
+                        if (add) actions.push(actionName);
                     }
                 }, this);
             }
@@ -101,6 +113,21 @@ if(typeof exports !== 'undefined'){
         triggerAction: function(action, aObject) {
             if (_.isString(action) && aObject && aObject.actions) {
                 var handlerDef = aObject.actions[action];
+                if (_.isString(handlerDef)) {
+                    // We assume this is a URL and will use HttpActionHandler
+                    handlerDef = {
+                        objectType: 'HttpActionHandler',
+                        url: handlerDef
+                    };
+                }
+                if (_.isArray(handlerDef)) {
+                    //Get first registered handler
+                    handlerDef = _.find(handlerDef, function(def){
+                        if (_.isObject(def) && def.objectType) {
+                            return this._actionHandlers[def.objectType];
+                        }
+                    }, this);
+                }
                 if (_.isObject(handlerDef) && handlerDef.objectType) {
                     var type = handlerDef.objectType;
                     if (_.isObject(this._actionHandlers[type])) {
