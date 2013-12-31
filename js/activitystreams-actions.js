@@ -108,9 +108,11 @@ if(typeof exports !== 'undefined'){
          * @memberOf ActivityStreams.Actions
          * @param {String} action Name of action being triggered
          * @param {ActivityObject} aObject ActivityStreams object being used
+         * @param {Object} context (Optional) Context that ActionHandler should use
          * @returns {ActionResult | undefined} An ActionResult or undefined if no appropriate action handler was found
          */
-        triggerAction: function(action, aObject) {
+        triggerAction: function(action, aObject, context) {
+            context = context || this;
             if (_.isString(action) && aObject && aObject.actions) {
                 var handlerDef = aObject.actions[action];
                 if (_.isString(handlerDef)) {
@@ -140,7 +142,7 @@ if(typeof exports !== 'undefined'){
                          */
                         return {
                             type: type,
-                            result: this._actionHandlers[type].run(action, aObject)
+                            result: this._actionHandlers[type].handle(action, handlerDef, context)
                         };
                     }
                 }
@@ -162,14 +164,35 @@ if(typeof exports !== 'undefined'){
     };
     ActionHandler.prototype = {
         /**
-         * Called when this ActionHandler is invoked.
+         * Set of default properties to use with action definitions for this ActionHandler
+         * @memberOf ActivityStreams.ActionHandler
+         */
+        defaults: {},
+        /**
+         * Called when this ActionHandler is invoked.  All ActionHandlers must implement this function.
          * @memberOf ActivityStreams.ActionHandler
          * @param {String} action Name of action being triggered
-         * @param {ActivityObject} aObject ActivityStreams object being used
+         * @param {Object} handlerDef Activity Handler definition that is being used
+         * @param {*} context (Optional) Context that was passed when this action was triggered
          * @throws {ActivityStreams.ActionsException} if run function is not implemented
          */
-        run: function(action, aObject){
+        run: function(action, handlerDef, context){
             throw new ActionsException(this.objectType + " run method not implemented!!");
+        },
+        /**
+         * Called when this action is first triggered.  Performs setup and then runs the action and returns the
+         * run result.
+         * @memberOf ActivityStreams.ActionHandler
+         * @param {String} action Name of action being triggered
+         * @param {Object} handlerDef Activity Handler definition that is being used
+         * @param {*} context (Optional) Context that was passed when this action was triggered
+         * @returns {*} Result from run function
+         * @throws {ActivityStreams.ActionsException} if fatal error occurs
+         */
+        handle: function(action, handlerDef, context) {
+            var copy = _.clone(handlerDef);
+            copy = _.extend(copy, this.defaults);
+            return this.run(action, copy, context);
         }
     };
 
@@ -182,7 +205,28 @@ if(typeof exports !== 'undefined'){
      */
     var HttpActionHandler = ActivityStreams.HttpActionHandler = function(){ ActionHandler.apply(this, arguments) };
     HttpActionHandler.prototype = _.extend({}, ActionHandler.prototype, {
-        objectType: 'HttpActionHandler'
+        objectType: 'HttpActionHandler',
+        defaults: {
+            method: 'GET',
+            target: 'DEFAULT'
+        },
+        /**
+         * Converts URL handler into an object, does some pre-checking
+         * @override
+         * @private
+         */
+        handle: function(action, handlerDef, context) {
+            if (_.isString(handlerDef)) { //Sanity check, in case this is invoked directly
+                handlerDef = {
+                    objectType: 'HttpActionHandler',
+                    url: handlerDef
+                };
+            }
+            if (_.isUndefined(handlerDef.url)) {
+                throw new ActivityStreams.ActionsException('URL property is required for HttpActionHandler');
+            }
+            ActionHandler.prototype.handle.call(this, action, handlerDef, context);
+        }
     });
 
     /**

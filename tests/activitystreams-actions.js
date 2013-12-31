@@ -15,12 +15,48 @@
  **/
 describe('Activity Streams Actions', function(){
 
-    describe("Actions class", function(){
+    describe('HttpActionHandler class', function(){
+        var httpActionHandler;
+        beforeEach(function(){
+            httpActionHandler = new ActivityStreams.HttpActionHandler();
+            httpActionHandler.run = function(){};  //empty for now
+            spyOn(httpActionHandler, 'run');
+        });
+        describe('handle()', function(){
+            it('should populate handler definition with defaults before calling run', function(){
+                httpActionHandler.handle('test', {url: 'http://example.com'});
+                expect(httpActionHandler.run).toHaveBeenCalledWith('test', {
+                    url: 'http://example.com',
+                    method: 'GET',
+                    target: 'DEFAULT'
+                }, undefined);
+            });
+            it('should convert a string definition into an object definition with string as URL property', function(){
+                httpActionHandler.handle('test', 'http://example.com');
+                expect(httpActionHandler.run).toHaveBeenCalledWith('test', {
+                    url: 'http://example.com',
+                    method: 'GET',
+                    target: 'DEFAULT',
+                    objectType : 'HttpActionHandler'
+                }, undefined);
+            });
+            it('should throw an exception if URL property is not defined', function(){
+                try {
+                    httpActionHandler.handle('test', {method: 'GET'});
+                    fail("Should have thrown ActionsException");
+                } catch(e) {
+                    expect(e.name).toBe("ActionsException");
+                }
+            });
+        });
+    });
+
+    describe('Actions class', function(){
         var Actions;
         beforeEach(function(){
             Actions = new ActivityStreams.Actions();
         });
-        describe('registerActionHandler', function(){
+        describe('registerActionHandler()', function(){
             it('registers action handlers', function(){
                 expect(_.isFunction(Actions.registerActionHandler)).toBeTruthy();
                 var handler = new ActivityStreams.ActionHandler('test');
@@ -29,7 +65,7 @@ describe('Activity Streams Actions', function(){
                 expect(Actions.registerActionHandler(new ActivityStreams.IntentActionHandler())).toBeUndefined();
                 expect(Actions.registerActionHandler(new ActivityStreams.EmbedActionHandler())).toBeUndefined();
             });
-            it('requires an ActionHandler object', function(){
+            it('should throw an exception if it is not passed an ActionHandler object', function(){
                 try {
                     Actions.registerActionHandler();
                     fail("Should have thrown ActionsException");
@@ -50,13 +86,14 @@ describe('Activity Streams Actions', function(){
                 }
             });
         });
-        describe('getActionsWithHandlers', function(){
+        describe('getActionsWithHandlers()', function(){
             var actionObj;
             beforeEach(function(){
                 actionObj = {
                     actions: {
-                        shortHttpAction: "http://fakeurl.com",
+                        shortHttpAction: 'http://fakeurl.com',
                         fullHttpAction: {
+                            url: 'http://fakeurl.com',
                             objectType: 'HttpActionHandler'
                         },
                         embedAction: {
@@ -81,17 +118,18 @@ describe('Activity Streams Actions', function(){
                 Actions.registerActionHandler(new ActivityStreams.HttpActionHandler());
                 expect(Actions.getActionsWithHandlers(actionObj)).toEqual(['shortHttpAction', 'fullHttpAction', 'multiHandlerAction']);
                 Actions.registerActionHandler(new ActivityStreams.EmbedActionHandler());
-                expect(Actions.getActionsWithHandlers(actionObj)).toEqual(['shortHttpAction', 'fullHttpAction', 'embedAction', 'multiHandlerAction',])
+                expect(Actions.getActionsWithHandlers(actionObj)).toEqual(['shortHttpAction', 'fullHttpAction', 'embedAction', 'multiHandlerAction'])
             });
         });
-        describe('triggerAction', function(){
+        describe('triggerAction()', function(){
             var actionObj, httpHandler, embedHandler;
             beforeEach(function(){
                 actionObj = {
                     actions: {
-                        httpAction: "http://fakeurl.com",
+                        httpAction: 'http://fakeurl.com',
                         multiHandlerAction: [
                             {
+                                url: 'http://fakeurl.com',
                                 objectType: 'HttpActionHandler'
                             },
                             {
@@ -102,15 +140,22 @@ describe('Activity Streams Actions', function(){
                     }
                 };
                 httpHandler = new ActivityStreams.HttpActionHandler();
-                httpHandler.run = function(action, aObject){
+                httpHandler.run = function(action, handlerDef){
                     expect(action).toEqual('httpAction');
-                    expect(aObject).toEqual(actionObj);
+                    expect(handlerDef).toEqual({
+                        url: 'http://fakeurl.com',
+                        method: 'GET',
+                        target: 'DEFAULT',
+                        objectType : 'HttpActionHandler'
+                    });
                 };
                 spyOn(httpHandler, "run").andCallThrough();
                 embedHandler = new ActivityStreams.EmbedActionHandler();
-                embedHandler.run = function(action, aObject){
+                embedHandler.run = function(action, handlerDef){
                     expect(action).toEqual('multiHandlerAction');
-                    expect(aObject).toEqual(actionObj);
+                    expect(handlerDef).toEqual({
+                        objectType : 'EmbedActionHandler'
+                    });
                 };
                 spyOn(embedHandler, "run").andCallThrough();
             });
@@ -140,6 +185,14 @@ describe('Activity Streams Actions', function(){
                 Actions.registerActionHandler(httpHandler);
                 Actions.triggerAction('multiHandlerAction', actionObj);
                 expect(httpHandler.run).toHaveBeenCalled();
+            });
+            it('should pass context if provided', function(){
+                Actions.registerActionHandler(embedHandler);
+                Actions.triggerAction('multiHandlerAction', actionObj, 'mine');
+                expect(embedHandler.run).toHaveBeenCalledWith(
+                    'multiHandlerAction',
+                    {objectType : 'EmbedActionHandler'},
+                    'mine');
             });
         });
     });
