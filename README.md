@@ -2,7 +2,7 @@ incubator
 =========
 To contribute, you need to sign the OpenSocial CLA.  We use CLAHub to enforce this on all incoming pull requests.
 
-## Incubator Components
+## Components
 - [Activity Streams Action Handlers](http://opensocial.org/projects/) - agnostic javascript component for working with Activity Streams, Actions, and Action Handlers.
 
 ## Building Docs
