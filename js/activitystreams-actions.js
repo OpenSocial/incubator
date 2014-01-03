@@ -30,7 +30,6 @@ if(typeof exports !== 'undefined'){
 (function(){
     var _ = this._ || window._;
 
-
     /**
      * ActionsException class
      * @class
@@ -45,7 +44,8 @@ if(typeof exports !== 'undefined'){
     };
 
     /**
-     * Class for handling Activity Stream Action processing
+     * Class for handling Activity Stream Actions.
+     * See {@link http://tools.ietf.org/html/draft-snell-activitystreams-actions-02} for details on Action Handlers.
      * @class
      * @memberOf ActivityStreams
      */
@@ -104,12 +104,32 @@ if(typeof exports !== 'undefined'){
             return actions;
         },
         /**
+         * Called during {@link ActivityStreams.Actions.triggerAction} when an action being triggered ought to seek
+         * confirmation from user prior to carrying out action.  Implementations should trigger onConfirm callback
+         * to continue with action as needed.
+         *
+         * Default implementation auto-confirms, consumers should override this function to properly implement user
+         * confirmation.
+         *
+         * See {@link http://tools.ietf.org/html/draft-snell-activitystreams-actions-02#section-2}
+         *
+         * @memberOf ActivityStreams.Actions
+         * @param {String} action Name of action being triggered
+         * @param {Object} handlerDef Activity Handler definition that is being used
+         * @param {Function} onConfirm Callback to trigger if user confirms this action
+         * @param {*} context (Optional) Consumer context that was passed when this action was triggered
+         */
+        confirmAction: function(action, handlerDef, onConfirm, context){
+            //default behavior
+            onConfirm();
+        },
+        /**
          * Triggers the appropriate action handler for the given action on the given activity
          * @memberOf ActivityStreams.Actions
          * @param {String} action Name of action being triggered
          * @param {ActivityObject} aObject ActivityStreams object being used
-         * @param {Object} context (Optional) Context that ActionHandler should use
-         * @returns {ActionResult | undefined} An ActionResult or undefined if no appropriate action handler was found
+         * @param {*} context (Optional) Consumer context that ActionHandler should receive
+         * @returns {Boolean} True if an appropriate action handler was found, false otherwise.
          */
         triggerAction: function(action, aObject, context) {
             context = context || this;
@@ -133,26 +153,28 @@ if(typeof exports !== 'undefined'){
                 if (_.isObject(handlerDef) && handlerDef.objectType) {
                     var type = handlerDef.objectType;
                     if (_.isObject(this._actionHandlers[type])) {
-                        /**
-                         * @memberOf ActivityStreams.Actions
-                         * @typedef ActionResult
-                         * @type {Object}
-                         * @property type Type of ActionHandler that was called
-                         * @property result Return value for handler callback
-                         */
-                        return {
-                            type: type,
-                            result: this._actionHandlers[type].handle(action, handlerDef, context)
+                        var actionHandler = this._actionHandlers[type];
+                        var onConfirm = function(){
+                            actionHandler.handle(action, handlerDef, context);
                         };
+                        // Check if confirmation is required, if so trigger consumer's confirm callback
+                        if (handlerDef.confirm) {
+                            this.confirmAction(action, handlerDef, onConfirm, context);
+                        } else {
+                            onConfirm();
+                        }
+                        return true;
                     }
                 }
             }
+            return false;
         }
     };
 
 
     /**
-     * Default implementation for all ActionHandlers
+     * Default implementation for all ActionHandlers.
+     * See {@link http://tools.ietf.org/html/draft-snell-activitystreams-actions-02#section-2} for details.
      * @class
      * @memberOf ActivityStreams
      * @param {String} type (optional) Type for this ActionHandler
@@ -161,44 +183,52 @@ if(typeof exports !== 'undefined'){
         if(objectType){
             this.objectType = objectType;
         }
+        this.initialize();
     };
     ActionHandler.prototype = {
         /**
          * Set of default properties to use with action definitions for this ActionHandler
          * @memberOf ActivityStreams.ActionHandler
          */
-        defaults: {},
+        defaults: {
+            confirm: false
+        },
+        /**
+         * Initialize this ActionHandler after it has been created.
+         * Default implementation setups up defaults.
+         * @memberOf ActivityStreams.ActionHandler
+         */
+        initialize: function(){
+            this.defaults = _.extend({}, ActionHandler.prototype.defaults, this.defaults);
+        },
         /**
          * Called when this ActionHandler is invoked.  All ActionHandlers must implement this function.
          * @memberOf ActivityStreams.ActionHandler
          * @param {String} action Name of action being triggered
          * @param {Object} handlerDef Activity Handler definition that is being used
-         * @param {*} context (Optional) Context that was passed when this action was triggered
+         * @param {*} context (Optional) Consumer context that was passed when this action was triggered
          * @throws {ActivityStreams.ActionsException} if run function is not implemented
          */
         run: function(action, handlerDef, context){
             throw new ActionsException(this.objectType + " run method not implemented!!");
         },
         /**
-         * Called when this action is first triggered.  Performs setup and then runs the action and returns the
-         * run result.
+         * Called when this action is first triggered.  Performs setup and then runs the action.
          * @memberOf ActivityStreams.ActionHandler
          * @param {String} action Name of action being triggered
          * @param {Object} handlerDef Activity Handler definition that is being used
-         * @param {*} context (Optional) Context that was passed when this action was triggered
-         * @returns {*} Result from run function
+         * @param {*} context (Optional) Consumer context that was passed when this action was triggered
          * @throws {ActivityStreams.ActionsException} if fatal error occurs
          */
         handle: function(action, handlerDef, context) {
-            var copy = _.clone(handlerDef);
-            copy = _.extend(copy, this.defaults);
-            return this.run(action, copy, context);
+            var copy = _.extend({}, handlerDef, this.defaults);
+            this.run(action, copy, context);
         }
     };
 
     /**
      * Client performs an HTTP request to a URL.  This is the default ActionHandler when only a URL string has been
-     * specified.
+     * specified.  See {@link http://tools.ietf.org/html/draft-snell-activitystreams-actions-02#section-3} for details.
      * @class
      * @memberOf ActivityStreams
      * @extends ActivityStreams.ActionHandler
@@ -206,9 +236,14 @@ if(typeof exports !== 'undefined'){
     var HttpActionHandler = ActivityStreams.HttpActionHandler = function(){ ActionHandler.apply(this, arguments) };
     HttpActionHandler.prototype = _.extend({}, ActionHandler.prototype, {
         objectType: 'HttpActionHandler',
+        /**
+         * Set of additional default values to use with HttpActionHandlers
+         *
+         * @memberOf ActivityStreams.HttpActionHandler
+         */
         defaults: {
-            method: 'GET',
-            target: 'DEFAULT'
+            method: 'GET',      // Default HTTP method to use
+            target: 'DEFAULT'   // Intended target for HTTP action is the consumer defined default
         },
         /**
          * Converts URL handler into an object, does some pre-checking
@@ -231,6 +266,7 @@ if(typeof exports !== 'undefined'){
 
     /**
      * Client presents an embed for this activity using inlined HTML content.
+     * See {@link http://tools.ietf.org/html/draft-snell-activitystreams-actions-02#section-4} for details.
      * @class
      * @memberOf ActivityStreams
      * @extends ActivityStreams.ActionHandler
@@ -243,6 +279,7 @@ if(typeof exports !== 'undefined'){
     /**
      * Client performs an action based on client side configuration or user preferences.  The intent could be handled
      * by launching an external (mobile) application or via some other local action.
+     * See {@link http://tools.ietf.org/html/draft-snell-activitystreams-actions-02#section-5} for details.
      * @class
      * @memberOf ActivityStreams
      * @extends ActivityStreams.ActionHandler

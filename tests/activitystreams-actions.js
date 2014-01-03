@@ -15,6 +15,46 @@
  **/
 describe('Activity Streams Actions', function(){
 
+    describe('ActionHandler class', function(){
+
+        describe('initialize()', function(){
+            it('should populate defaults', function(){
+                var actionHandler;
+                actionHandler = new ActivityStreams.ActionHandler('testHandler');
+                var defaults = actionHandler.defaults;
+                expect(defaults).toEqual({
+                    confirm: false
+                });
+                var fooHandler = function(){ ActivityStreams.ActionHandler.apply(this, arguments) };
+                fooHandler.prototype = _.extend({}, ActivityStreams.ActionHandler.prototype, {
+                    objectType: 'FooHandler',
+                    defaults: {
+                        one: 1,
+                        two: 2
+                    }
+                });
+                actionHandler = new fooHandler();
+                expect(actionHandler.defaults).toEqual({
+                    one: 1,
+                    two: 2,
+                    confirm: false
+                });
+                fooHandler.prototype = _.extend({}, ActivityStreams.ActionHandler.prototype, {
+                    objectType: 'FooHandler',
+                    defaults: {
+                        confirm: 1,
+                        two: 2
+                    }
+                });
+                actionHandler = new fooHandler();
+                expect(actionHandler.defaults).toEqual({
+                    confirm: 1,
+                    two: 2
+                });
+            });
+        });
+    });
+
     describe('HttpActionHandler class', function(){
         var httpActionHandler;
         beforeEach(function(){
@@ -28,7 +68,8 @@ describe('Activity Streams Actions', function(){
                 expect(httpActionHandler.run).toHaveBeenCalledWith('test', {
                     url: 'http://example.com',
                     method: 'GET',
-                    target: 'DEFAULT'
+                    target: 'DEFAULT',
+                    confirm: false
                 }, undefined);
             });
             it('should convert a string definition into an object definition with string as URL property', function(){
@@ -37,7 +78,8 @@ describe('Activity Streams Actions', function(){
                     url: 'http://example.com',
                     method: 'GET',
                     target: 'DEFAULT',
-                    objectType : 'HttpActionHandler'
+                    objectType : 'HttpActionHandler',
+                    confirm: false
                 }, undefined);
             });
             it('should throw an exception if URL property is not defined', function(){
@@ -121,6 +163,18 @@ describe('Activity Streams Actions', function(){
                 expect(Actions.getActionsWithHandlers(actionObj)).toEqual(['shortHttpAction', 'fullHttpAction', 'embedAction', 'multiHandlerAction'])
             });
         });
+
+        describe('confirmAction()', function(){
+            it('default implementation should call onConfirm', function(){
+                var foo = {
+                    onConfirm: function(){}
+                };
+                spyOn(foo, 'onConfirm');
+                Actions.confirmAction('fakeName', {}, foo.onConfirm);
+                expect(foo.onConfirm).toHaveBeenCalled();
+            });
+        });
+
         describe('triggerAction()', function(){
             var actionObj, httpHandler, embedHandler;
             beforeEach(function(){
@@ -129,14 +183,19 @@ describe('Activity Streams Actions', function(){
                         httpAction: 'http://fakeurl.com',
                         multiHandlerAction: [
                             {
-                                url: 'http://fakeurl.com',
-                                objectType: 'HttpActionHandler'
+                                objectType: 'HttpActionHandler',
+                                url: 'http://fakeurl.com'
                             },
                             {
                                 objectType: 'EmbedActionHandler'
                             }
                         ],
-                        neverAction: null
+                        neverAction: null,
+                        confirmAction: {
+                            objectType: 'HttpActionHandler',
+                            url: 'http://fakeurl.com',
+                            confirm: true
+                        }
                     }
                 };
                 httpHandler = new ActivityStreams.HttpActionHandler();
@@ -146,7 +205,8 @@ describe('Activity Streams Actions', function(){
                         url: 'http://fakeurl.com',
                         method: 'GET',
                         target: 'DEFAULT',
-                        objectType : 'HttpActionHandler'
+                        objectType : 'HttpActionHandler',
+                        confirm: false
                     });
                 };
                 spyOn(httpHandler, "run").andCallThrough();
@@ -154,31 +214,26 @@ describe('Activity Streams Actions', function(){
                 embedHandler.run = function(action, handlerDef){
                     expect(action).toEqual('multiHandlerAction');
                     expect(handlerDef).toEqual({
-                        objectType : 'EmbedActionHandler'
+                        objectType : 'EmbedActionHandler',
+                        confirm: false
                     });
                 };
                 spyOn(embedHandler, "run").andCallThrough();
             });
-            it('should return undefined if no handler registered for this action', function(){
-                expect(Actions.triggerAction('httpAction', actionObj)).toBeUndefined();
-                expect(Actions.triggerAction('neverAction', actionObj)).toBeUndefined();
+            it('should return false if no handler registered for this action', function(){
+                expect(Actions.triggerAction('httpAction', actionObj)).toBe(false);
+                expect(Actions.triggerAction('neverAction', actionObj)).toBe(false);
             });
             it('should trigger the Action Handler registered for this action', function(){
                 Actions.registerActionHandler(httpHandler);
                 var result = Actions.triggerAction('httpAction', actionObj);
-                expect(result).toEqual({
-                    type: 'HttpActionHandler',
-                    result: undefined
-                });
+                expect(result).toBe(true);
                 expect(httpHandler.run).toHaveBeenCalled();
             });
             it('should trigger the first registered Action Handler for this action', function(){
                 Actions.registerActionHandler(embedHandler);
                 var result = Actions.triggerAction('multiHandlerAction', actionObj);
-                expect(result).toEqual({
-                    type: 'EmbedActionHandler',
-                    result: undefined
-                });
+                expect(result).toBe(true);
                 expect(embedHandler.run).toHaveBeenCalled();
                 httpHandler = new ActivityStreams.HttpActionHandler();
                 spyOn(httpHandler, "run");
@@ -191,8 +246,17 @@ describe('Activity Streams Actions', function(){
                 Actions.triggerAction('multiHandlerAction', actionObj, 'mine');
                 expect(embedHandler.run).toHaveBeenCalledWith(
                     'multiHandlerAction',
-                    {objectType : 'EmbedActionHandler'},
+                    {
+                        objectType : 'EmbedActionHandler',
+                        confirm: false
+                    },
                     'mine');
+            });
+            it('should call confirmAction if handler definition requires it', function(){
+                Actions.registerActionHandler(httpHandler);
+                spyOn(Actions, 'confirmAction');
+                Actions.triggerAction('confirmAction', actionObj);
+                expect(Actions.confirmAction).toHaveBeenCalled();
             });
         });
     });
