@@ -3,7 +3,7 @@ incubator
 To contribute, you need to <a href="http://www.clahub.com/agreements/OpenSocial/incubator">sign the Contributor License Agreement</a>.  We use CLAHub to enforce this on all incoming pull requests.
 
 ## Components
-- [Activity Streams Action Handlers](http://opensocial.org/projects/) - agnostic javascript component for working with Activity Streams, Actions, and Action Handlers.  Based on [v2 draft](http://www.ietf.org/id/draft-snell-activitystreams-actions-02.txt) of Action Handlers specification.
+- [Activity Streams Action Handlers](http://opensocial.org/projects/) - agnostic javascript component for working with Activity Streams, Actions, and Action Handlers.  Based on v2 draft of Action Handlers, needs to be updated to [v3 draft](http://www.ietf.org/id/draft-snell-activitystreams-actions-03.txt) of Action Handlers specification.
 
 ## Building Docs
 This project is fully documented using JSDoc 3.
