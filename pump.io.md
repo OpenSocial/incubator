@@ -13,6 +13,7 @@ Check out this branch to work with Pump.io.  A comparison of this branch with Pu
   
 Below I am including my sample `/etc/pump.io.json` configuration file.  For more details on setting up and running Pump.io, I refer to you the Pump.io documentation at http://pump.io/.
 
+```javascript
 {
     "driver":  "memory",
     "params":  {},
@@ -31,3 +32,4 @@ Below I am including my sample `/etc/pump.io.json` configuration file.  For more
     "firehose": false,
     "scripts" : []
 }
+```
