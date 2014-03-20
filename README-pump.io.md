@@ -1,7 +1,9 @@
 Working with Pump.io
 --------------------
 
-Pump.io is a convenient activity stream to use for prototyping this project.
+Pump.io is a convenient activity stream to use for prototyping this project.  The main changes have been made on the form where you can submit new Notes.  These Notes are activity entries that get placed into the user's activity stream.  You can attach ActionHandler data using the extensions that have been added to that web form.
+
+![pump.io](http://i.imgur.com/KyXWp6v.png)
 
 OpenSocial has a fork of Pump.io with a branch that includes changes to bootstrap developing Activity Streams Action Handlers.
 
