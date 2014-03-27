@@ -5,17 +5,17 @@ File bugs or feature requests using Github Issue Tracker.
 
 To contribute, 
 
-# Electronically sign the OpenSocial Incubator Contributor License Agreement (https://docs.google.com/forms/d/1b9tfsUJAs1xF7uyFwpT8yoVH7scOj8uXwQnZdTHHCTM/viewform)
-# Fork this repository.
-# Work on your changes within a topic branch.
-# Create a pull request
+1. Electronically sign the OpenSocial Incubator Contributor License Agreement (https://docs.google.com/forms/d/1b9tfsUJAs1xF7uyFwpT8yoVH7scOj8uXwQnZdTHHCTM/viewform)
+1. Fork this repository.
+1. Work on your changes within a topic branch.
+1. Create a pull request
 
-Pull requests are accepted under the discretion of the Incubator maintainer(s).
+Pull requests are accepted under the discretion of the Incubator maintainer(s).  Improve the chances your PR will be merged by following the requirements and guidelines below.
 
-- You must have signed the OpenSocial Incubator CLA and included your Github ID.  This is a hard requirement before merging any pull request.  
+**REQUIREMENTS**
+- You must have signed the OpenSocial Incubator CLA and included your Github ID.
 
-The rest of the points below are guideline to follow to improve the chances your Pull Request will be merged.
-
+**GUIDELINES**
 - Make sure your pull contains quality code.  We will certainly provide constructive feedback on works in progress but we will not merge incomplete pull requests.
 - Make sure your pull has automated tests.  For Javascript, we have been using Jasmine.
 - Make sure your pull is fully documented.  For Javascript, we use jsdoc.
