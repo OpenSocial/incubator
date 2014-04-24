@@ -1,0 +1,6 @@
+[submodule "java/activitystreams"]
+	path = java/activitystreams
+	url = git@github.com:OpenSocial/activitystreams.git
+[submodule "js/activitystreams.js"]
+	path = js/activitystreams.js
+	url = git@github.com:OpenSocial/activitystreams.js.git
